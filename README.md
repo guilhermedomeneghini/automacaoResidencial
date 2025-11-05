@@ -29,7 +29,7 @@ Este projeto demonstra um **sistema de automação residencial de baixo custo** 
 
 | Módulo Relé | ESP32 | Função |
 |:-------------|:------|:--------|
-| VCC (ou DC+) | VIN (5V) | Alimentação do relé |
+| VCC (ou DC+) | VIN (3V) | Alimentação do relé |
 | GND          | GND     | Terra comum |
 | IN1          | GPIO26  | Controle do relé 1 |
 | IN2          | GPIO27  | Controle do relé 2 |
