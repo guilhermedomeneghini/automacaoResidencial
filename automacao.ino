@@ -8,9 +8,11 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <BlynkSimpleEsp32.h>
+#include <SinricPro.h>
+#include <SinricProSwitch.h>
 
-char ssid[] = "Microlages-Escritorio";
-char pass[] = "4930198001";
+char ssid[] = "Guilherme2";
+char pass[] = "walmeling12";
 
 // Pinos dos relés
 #define rele1 26
@@ -19,8 +21,34 @@ char pass[] = "4930198001";
 #define RELAY_ON  LOW
 #define RELAY_OFF HIGH
 
+// Configurações Sinric Pro
+// Obtenha estes valores em: https://portal.sinric.pro
+// Na seção "Credentials" você encontrará:
+#define SINRICPRO_APP_KEY    "f7b4645c-6d0e-4df8-a6bc-a69f7f6bc56d"  // App Key (ou API Key)
+#define SINRICPRO_APP_SECRET "443a9517-09c4-459d-a069-1d9e2b1a1436-e0bfe853-681d-459d-93cd-61e407f1ab89"  // App Secret (senha) - Cole aqui a senha que você obteve
+#define SINRICPRO_DEVICE_ID_1 "6918af686ebb39d664b8ae1d"  // Device ID do Relé 1
+#define SINRICPRO_DEVICE_ID_2 "6918afc7729a4887d7cef735"  // Device ID do Relé 2
+
 BlynkTimer timer;
 WebServer server(80);
+
+// --- Função auxiliar para controlar relé e sincronizar todos os sistemas ---
+void controlarRele(int rele, bool estado) {
+  if (rele == 1) {
+    digitalWrite(rele1, estado ? RELAY_ON : RELAY_OFF);
+    Blynk.virtualWrite(V0, estado ? 1 : 0);
+    // Sincroniza estado no Sinric Pro
+    SinricProSwitch &mySwitch1 = SinricPro[SINRICPRO_DEVICE_ID_1];
+    mySwitch1.sendPowerStateEvent(estado);
+  } else if (rele == 2) {
+    digitalWrite(rele2, estado ? RELAY_ON : RELAY_OFF);
+    Blynk.virtualWrite(V1, estado ? 1 : 0);
+    // Sincroniza estado no Sinric Pro
+    SinricProSwitch &mySwitch2 = SinricPro[SINRICPRO_DEVICE_ID_2];
+    mySwitch2.sendPowerStateEvent(estado);
+  }
+  atualizarStatus();
+}
 
 // --- Atualiza status no Blynk ---
 void atualizarStatus() {
@@ -34,14 +62,12 @@ void atualizarStatus() {
 // --- Controle individual via Blynk ---
 BLYNK_WRITE(V0) {
   int value = param.asInt();
-  digitalWrite(rele1, value ? RELAY_ON : RELAY_OFF);
-  atualizarStatus();
+  controlarRele(1, value == 1);
 }
 
 BLYNK_WRITE(V1) {
   int value = param.asInt();
-  digitalWrite(rele2, value ? RELAY_ON : RELAY_OFF);
-  atualizarStatus();
+  controlarRele(2, value == 1);
 }
 
 // --- Botão "Tudo Off" via Blynk ---
@@ -51,16 +77,28 @@ BLYNK_WRITE(V4) {
   if (value == 1) {
     Serial.println("Comando: Tudo Off");
 
-    digitalWrite(rele1, RELAY_OFF);
-    digitalWrite(rele2, RELAY_OFF);
-
-    atualizarStatus();
-    Blynk.virtualWrite(V0, 0);
-    Blynk.virtualWrite(V1, 0);
+    controlarRele(1, false);
+    controlarRele(2, false);
 
     delay(300);
     Blynk.virtualWrite(V4, 0);
   }
+}
+
+// ==================== CALLBACKS SINRIC PRO ====================
+
+// Callback para Relé 1 via Google Assistant
+bool onPowerState1(const String &deviceId, bool &state) {
+  Serial.printf("Sinric Pro - Relé 1: %s\r\n", state ? "ON" : "OFF");
+  controlarRele(1, state);
+  return true; // Confirma que o comando foi recebido
+}
+
+// Callback para Relé 2 via Google Assistant
+bool onPowerState2(const String &deviceId, bool &state) {
+  Serial.printf("Sinric Pro - Relé 2: %s\r\n", state ? "ON" : "OFF");
+  controlarRele(2, state);
+  return true; // Confirma que o comando foi recebido
 }
 
 // --- Página HTML simples ---
@@ -84,7 +122,7 @@ String getHTML() {
   html += "<button class='off' onclick=\"fetch('/off2')\">Desligar 2</button><br>";
 
   html += "<hr><button class='off' onclick=\"fetch('/alloff')\">🚨 Desligar Tudo</button>";
-  html += "<p style='margin-top:20px;color:#777;'>Sistema Integrado ao Blynk Cloud</p>";
+  html += "<p style='margin-top:20px;color:#777;'>Sistema Integrado: Blynk + Sinric Pro (Google Assistant)</p>";
   html += "</body></html>";
 
   return html;
@@ -96,39 +134,28 @@ void handleRoot() {
 }
 
 void handleOn1() {
-  digitalWrite(rele1, RELAY_ON);
-  Blynk.virtualWrite(V0, 1);
-  atualizarStatus();
+  controlarRele(1, true);
   server.send(200, "text/html", getHTML());
 }
 
 void handleOff1() {
-  digitalWrite(rele1, RELAY_OFF);
-  Blynk.virtualWrite(V0, 0);
-  atualizarStatus();
+  controlarRele(1, false);
   server.send(200, "text/html", getHTML());
 }
 
 void handleOn2() {
-  digitalWrite(rele2, RELAY_ON);
-  Blynk.virtualWrite(V1, 1);
-  atualizarStatus();
+  controlarRele(2, true);
   server.send(200, "text/html", getHTML());
 }
 
 void handleOff2() {
-  digitalWrite(rele2, RELAY_OFF);
-  Blynk.virtualWrite(V1, 0);
-  atualizarStatus();
+  controlarRele(2, false);
   server.send(200, "text/html", getHTML());
 }
 
 void handleAllOff() {
-  digitalWrite(rele1, RELAY_OFF);
-  digitalWrite(rele2, RELAY_OFF);
-  Blynk.virtualWrite(V0, 0);
-  Blynk.virtualWrite(V1, 0);
-  atualizarStatus();
+  controlarRele(1, false);
+  controlarRele(2, false);
   server.send(200, "text/html", getHTML());
 }
 
@@ -164,14 +191,27 @@ void setup() {
   server.on("/alloff", handleAllOff);
   server.begin();
 
+  // Configura Sinric Pro
+  SinricProSwitch &mySwitch1 = SinricPro[SINRICPRO_DEVICE_ID_1];
+  mySwitch1.onPowerState(onPowerState1);
+  
+  SinricProSwitch &mySwitch2 = SinricPro[SINRICPRO_DEVICE_ID_2];
+  mySwitch2.onPowerState(onPowerState2);
+
+  // Inicia Sinric Pro com App Key e App Secret
+  SinricPro.begin(SINRICPRO_APP_KEY, SINRICPRO_APP_SECRET);
+  Serial.println("Sinric Pro iniciado!");
+
   timer.setInterval(2000L, atualizarStatus);
 
   Serial.println("Sistema iniciado com sucesso!");
+  Serial.println("Integrações ativas: Blynk + Web Local + Sinric Pro (Google Assistant)");
 }
 
 // --- Loop ---
 void loop() {
   Blynk.run();
+  SinricPro.handle();
   timer.run();
   server.handleClient();
 }
