@@ -11,8 +11,8 @@
 #include <SinricPro.h>
 #include <SinricProSwitch.h>
 
-char ssid[] = "YouNameWifi";
-char pass[] = "YouPassWordWifi";
+char ssid[] = "YourNameWifi";
+char pass[] = "YourPassWordWifi";
 
 // Pinos dos relés
 #define rele1 26
@@ -215,4 +215,5 @@ void loop() {
   timer.run();
   server.handleClient();
 }
+
 
