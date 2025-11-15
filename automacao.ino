@@ -1,6 +1,6 @@
 #define BLYNK_TEMPLATE_ID           "TMPL2SW-VQELN"
 #define BLYNK_TEMPLATE_NAME         "Quickstart Template"
-#define BLYNK_AUTH_TOKEN            "tkbt-ZUUlC3vf8bpXViNZonzXK4AG3Xq"
+#define BLYNK_AUTH_TOKEN "SEU_TOKEN_BLYNK"
 
 #define BLYNK_PRINT Serial
 
@@ -11,8 +11,8 @@
 #include <SinricPro.h>
 #include <SinricProSwitch.h>
 
-char ssid[] = "Guilherme2";
-char pass[] = "walmeling12";
+char ssid[] = "YouNameWifi";
+char pass[] = "YouPassWordWifi";
 
 // Pinos dos relés
 #define rele1 26
@@ -24,10 +24,10 @@ char pass[] = "walmeling12";
 // Configurações Sinric Pro
 // Obtenha estes valores em: https://portal.sinric.pro
 // Na seção "Credentials" você encontrará:
-#define SINRICPRO_APP_KEY    "f7b4645c-6d0e-4df8-a6bc-a69f7f6bc56d"  // App Key (ou API Key)
-#define SINRICPRO_APP_SECRET "443a9517-09c4-459d-a069-1d9e2b1a1436-e0bfe853-681d-459d-93cd-61e407f1ab89"  // App Secret (senha) - Cole aqui a senha que você obteve
-#define SINRICPRO_DEVICE_ID_1 "6918af686ebb39d664b8ae1d"  // Device ID do Relé 1
-#define SINRICPRO_DEVICE_ID_2 "6918afc7729a4887d7cef735"  // Device ID do Relé 2
+#define SINRICPRO_APP_KEY "SUA_APP_KEY"
+#define SINRICPRO_APP_SECRET "SUA_APP_SECRET"
+#define SINRICPRO_DEVICE_ID_1 "DEVICE_ID_RELE1"
+#define SINRICPRO_DEVICE_ID_2 "DEVICE_ID_RELE2"
 
 BlynkTimer timer;
 WebServer server(80);
@@ -215,3 +215,4 @@ void loop() {
   timer.run();
   server.handleClient();
 }
+
